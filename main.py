@@ -92,7 +92,7 @@ class BamaScraper:
 
 # Usage
 url = "https://bama.ir/car/peugeot-pars"
-webdriver_path = "/home/aminjm/drivers/chromedriver/chromedriver"
+webdriver_path = "/home/aminjm/drivers/chromedriver/chromedriver" # Add your webdriver path here
 
 scraper = BamaScraper(url, webdriver_path)
 scraper.scrape()
