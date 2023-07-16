@@ -3,8 +3,7 @@ from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.keys import Keys
-import pandas as pd
-
+import pymongo
 
 class BamaScraper:
     def __init__(self, url, webdriver_path):
@@ -14,7 +13,7 @@ class BamaScraper:
 
     def setup_driver(self):
         options = Options()
-        options.add_argument("--headless") # Run Chrome without opening a browser window
+        # options.add_argument("--headless") # Run Chrome without opening a browser window
         options.add_argument("--disable-gpu") # Disable GPU acceleration
         self.driver = webdriver.Chrome(executable_path=self.webdriver_path, options=options)
 
@@ -78,16 +77,27 @@ class BamaScraper:
         titles, years, mileages, models, prices, locations = self.extract_car_data(car_records)
         self.driver.quit()
 
-        data = {
-            "Title": titles,
-            "Year": years,
-            "Mileage": mileages,
-            "Model": models,
-            "Price": prices,
-            "Location": locations
-        }
-        df = pd.DataFrame(data)
-        df.to_excel("bama_car_data1.xlsx", index=False)
+        client = pymongo.MongoClient("mongodb://localhost:27017/")
+
+        db = client["bama-ir"]
+
+        collection = db["bama-scraper"]
+
+        data = []
+        for title, year, mileage, model, price, location in zip(titles, years, mileages, models, prices, locations):
+            data.append({
+                "Title": title,
+                "Year": year,
+                "Mileage": mileage,
+                "Model": model,
+                "Price": price,
+                "Location": location
+            })
+
+        collection.insert_many(data)
+
+        client.close()
+
 
 
 # Usage
