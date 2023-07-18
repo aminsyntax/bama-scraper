@@ -4,6 +4,8 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.keys import Keys
 import pymongo
+import pika
+import json
 
 class BamaScraper:
     def __init__(self, url, webdriver_path):
@@ -21,7 +23,7 @@ class BamaScraper:
         self.driver.get(self.url)
         time.sleep(5)
 
-    def scroll_page(self, scroll_limit=10, scroll_pause_time=2):
+    def scroll_page(self, scroll_limit=3, scroll_pause_time=4):
         scroll_count = 0
         while scroll_count < scroll_limit:
             self.driver.find_element_by_tag_name("body").send_keys(Keys.END)
@@ -33,7 +35,7 @@ class BamaScraper:
 
     def parse_page(self, page_source):
         soup = BeautifulSoup(page_source, "html.parser")
-        return soup.find_all("div", class_="bama-ad-holder")[:200]
+        return soup.find_all("div", class_="bama-ad-holder")[:]
 
     def extract_car_data(self, car_records):
         titles = []
@@ -77,11 +79,14 @@ class BamaScraper:
         titles, years, mileages, models, prices, locations = self.extract_car_data(car_records)
         self.driver.quit()
 
-        client = pymongo.MongoClient("mongodb://localhost:27017/")
+        # Establish connection to RabbitMQ
+        connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
+        channel = connection.channel()
 
-        db = client["bama-ir"]
+        # Create RabbitMQ queue
+        channel.queue_declare(queue='scraped_data')
 
-        collection = db["bama-scraper"]
+
 
         data = []
         for title, year, mileage, model, price, location in zip(titles, years, mileages, models, prices, locations):
@@ -93,10 +98,16 @@ class BamaScraper:
                 "Price": price,
                 "Location": location
             })
+        
+        for item in data:
+            # Convert item to JSON string before publishing
+            channel.basic_publish(exchange='', routing_key='scraped_data', body=json.dumps(item))
 
-        collection.insert_many(data)
+        # Close RabbitMQ connection
+        connection.close()
 
-        client.close()
+
+
 
 
 
