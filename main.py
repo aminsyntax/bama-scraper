@@ -23,7 +23,7 @@ class BamaScraper:
         self.driver.get(self.url)
         time.sleep(5)
 
-    def scroll_page(self, scroll_limit=3, scroll_pause_time=4):
+    def scroll_page(self, scroll_limit=30, scroll_pause_time=4):
         scroll_count = 0
         while scroll_count < scroll_limit:
             self.driver.find_element_by_tag_name("body").send_keys(Keys.END)
