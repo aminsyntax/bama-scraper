@@ -22,11 +22,16 @@ class BamaScraper:
         self.driver.get(self.url)
         time.sleep(5)
 
-    def scroll_page(self, scroll_limit=30, scroll_pause_time=4):
+    def scroll_page(self, scroll_limit=60, scroll_pause_time=5):
         scroll_count = 0
+        previous_height = self.driver.execute_script("return document.body.scrollHeight")
         while scroll_count < scroll_limit:
             self.driver.find_element_by_tag_name("body").send_keys(Keys.END)
             time.sleep(scroll_pause_time)
+            new_height = self.driver.execute_script("return document.body.scrollHeight")
+            if new_height == previous_height:
+                break
+            previous_height = new_height
             scroll_count += 1
 
     def get_page_source(self):
@@ -85,30 +90,26 @@ class BamaScraper:
         # Create RabbitMQ queue
         channel.queue_declare(queue='scraped_data')
 
-
-
         data = []
         for title, year, mileage, model, price, location in zip(titles, years, mileages, models, prices, locations):
-            data.append({
+            item = {
                 "Title": title,
                 "Year": year,
                 "Mileage": mileage,
                 "Model": model,
                 "Price": price,
                 "Location": location
-            })
-        
-        for item in data:
-            # Convert item to JSON string before publishing
-            channel.basic_publish(exchange='', routing_key='scraped_data', body=json.dumps(item))
+            }
+            data.append(item)
+
+            try:
+                channel.basic_publish(exchange='', routing_key='scraped_data', body=json.dumps(item))
+                print(f"Published item")
+            except Exception as e:
+                print(f"An error occurred: {str(e)}")
 
         # Close RabbitMQ connection
         connection.close()
-
-
-
-
-
 
 # Usage
 url = "https://bama.ir/car/peugeot-pars"
