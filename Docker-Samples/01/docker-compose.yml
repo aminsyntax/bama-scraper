@@ -1,0 +1,10 @@
+version: '3.9'
+
+services:
+  app:
+    build: .
+    image: bama:1.0
+    container_name: bama-app
+    volumes:
+      - .:/app
+

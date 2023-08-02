@@ -18,6 +18,8 @@ class BamaScraper:
         options.add_argument("--disable-gpu") # Disable GPU acceleration
         self.driver = webdriver.Chrome(executable_path=self.webdriver_path, options=options)
 
+
+
     def load_page(self):
         self.driver.get(self.url)
         time.sleep(5)
@@ -92,7 +94,7 @@ class BamaScraper:
 
 # Usage
 url = "https://bama.ir/car/peugeot-pars"
-webdriver_path = "/home/aminjm/drivers/chromedriver/chromedriver" # Add your webdriver path here
+webdriver_path = "/usr/local/bin/chromedriver" # Add your webdriver path here
 
 scraper = BamaScraper(url, webdriver_path)
 scraper.scrape()

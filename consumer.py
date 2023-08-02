@@ -2,6 +2,8 @@ import pymongo
 import pika
 import json
 
+from src.config.env import MOMGO_CONFIG, RABBITMQ_CONFIG
+
 class CarDataConsumer:
     def __init__(self, amqp_url, mongodb_url):
         self.amqp_url = amqp_url
@@ -15,8 +17,8 @@ class CarDataConsumer:
         data = json.loads(body)
 
         # Save the data to MongoDB
-        db = self.client["bama"]
-        collection = db["cars"]
+        db = self.client[MOMGO_CONFIG["mongo_database"]]
+        collection = db[MOMGO_CONFIG["collection"]]
         collection.insert_one(data)
 
         channel.basic_ack(delivery_tag=method.delivery_tag)
@@ -32,10 +34,7 @@ class CarDataConsumer:
      
 
 # Usage
-amqp_url = "amqp://guest:guest@localhost:5672/"
-mongodb_url = "mongodb://localhost:27017/"
-
-consumer = CarDataConsumer(amqp_url, mongodb_url)
+consumer = CarDataConsumer(RABBITMQ_CONFIG["amqp_url"], MOMGO_CONFIG["mongodb_url"])
 consumer.connect_to_mongodb()
 consumer.start_consuming()
 

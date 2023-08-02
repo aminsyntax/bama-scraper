@@ -6,6 +6,10 @@ from selenium.webdriver.common.keys import Keys
 import pika
 import json
 
+from src.config.env import DRIVER_CONFIG
+
+
+
 class BamaScraper:
     def __init__(self, url, webdriver_path):
         self.url = url
@@ -22,7 +26,7 @@ class BamaScraper:
         self.driver.get(self.url)
         time.sleep(5)
 
-    def scroll_page(self, scroll_limit=60, scroll_pause_time=5):
+    def scroll_page(self, scroll_limit=2, scroll_pause_time=5):
         scroll_count = 0
         previous_height = self.driver.execute_script("return document.body.scrollHeight")
         while scroll_count < scroll_limit:
@@ -112,8 +116,5 @@ class BamaScraper:
         connection.close()
 
 # Usage
-url = "https://bama.ir/car/peugeot-pars"
-webdriver_path = "/home/aminjm/drivers/chromedriver/chromedriver" # Add your webdriver path here
-
-scraper = BamaScraper(url, webdriver_path)
+scraper = BamaScraper(DRIVER_CONFIG["target_url"], DRIVER_CONFIG["local_webdriver_path"])
 scraper.scrape()
