@@ -4,7 +4,8 @@ import os
 dotenv.load_dotenv()
 
 DRIVER_CONFIG = {
-    "target_url": os.environ.get("target_url"),
+    "target_url_1": os.environ.get("target_url_1"),
+    "target_url_2": os.environ.get("target_url_2"),
     "local_webdriver_path": os.environ.get("local_webdriver_path"),
 }
 
@@ -15,5 +16,6 @@ MOMGO_CONFIG = {
 }
 
 RABBITMQ_CONFIG = {
-    "amqp_url": os.environ.get("amqp_url")
+    "amqp_url": os.environ.get("amqp_url"),
+    "rabbitmq_host": os.environ.get("rabbitmq_host"),
 }
