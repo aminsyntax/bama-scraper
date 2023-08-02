@@ -3,9 +3,13 @@ import os
 
 dotenv.load_dotenv()
 
+# Retrieve the "target_url" environment variable as a comma-separated string
+target_url_str = os.environ.get("target_url")
+
+# Convert the comma-separated string to a list if it's not None
+target_url_list = target_url_str.split(',') if target_url_str else []
 DRIVER_CONFIG = {
-    "target_url_1": os.environ.get("target_url_1"),
-    "target_url_2": os.environ.get("target_url_2"),
+    "target_url": target_url_list,
     "local_webdriver_path": os.environ.get("local_webdriver_path"),
 }
 

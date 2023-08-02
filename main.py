@@ -81,53 +81,47 @@ class BamaScraper:
         return titles, years, mileages, models, prices, locations
     
     def scrape_single_page(self, urls_chunk, queue_name):
-        for url in urls_chunk:
-            self.setup_driver()
-            self.load_page(url)
-            self.scroll_page()
-            page_source = self.get_page_source()
-            car_records = self.parse_page(page_source)
-            titles, years, mileages, models, prices, locations = self.extract_car_data(car_records)
-            self.driver.quit()
+        self.setup_driver()
+        self.load_page(urls_chunk)
+        self.scroll_page()
+        page_source = self.get_page_source()
+        car_records = self.parse_page(page_source)
+        titles, years, mileages, models, prices, locations = self.extract_car_data(car_records)
+        self.driver.quit()
 
-            # Establish connection to RabbitMQ
-            connection = pika.BlockingConnection(pika.ConnectionParameters(RABBITMQ_CONFIG["rabbitmq_host"]))
-            channel = connection.channel()
+        # Establish connection to RabbitMQ
+        connection = pika.BlockingConnection(pika.ConnectionParameters(RABBITMQ_CONFIG["rabbitmq_host"]))
+        channel = connection.channel()
 
-            # Create RabbitMQ queue using the unique queue_name for this thread
-            channel.queue_declare(queue=queue_name)
+        # Create RabbitMQ queue using the unique queue_name for this thread
+        channel.queue_declare(queue=queue_name)
 
-            data = []
-            for title, year, mileage, model, price, location in zip(titles, years, mileages, models, prices, locations):
-                item = {
-                    "Title": title,
-                    "Year": year,
-                    "Mileage": mileage,
-                    "Model": model,
-                    "Price": price,
-                    "Location": location
-                }
-                data.append(item)
+        data = []
+        for title, year, mileage, model, price, location in zip(titles, years, mileages, models, prices, locations):
+            item = {
+                "Title": title,
+                "Year": year,
+                "Mileage": mileage,
+                "Model": model,
+                "Price": price,
+                "Location": location
+            }
+            data.append(item)
 
-                try:
-                    # Publish item to the corresponding queue for this thread
-                    channel.basic_publish(exchange='', routing_key=queue_name, body=json.dumps(item))
-                    print(f"Published item to queue: {queue_name}")
-                except Exception as e:
-                    print(f"An error occurred: {str(e)}")
+            try:
+                # Publish item to the corresponding queue for this thread
+                channel.basic_publish(exchange='', routing_key=queue_name, body=json.dumps(item))
+                print(f"Published item to queue: {queue_name}")
+            except Exception as e:
+                print(f"An error occurred: {str(e)}")
 
-            # Close RabbitMQ connection
-            connection.close()
+        # Close RabbitMQ connection
+        connection.close()
 
     def scrape(self, url_list):
-        # Divide URLs into chunks based on the number of threads (in this case, 3 threads)
-        num_threads = 2
-        chunk_size = len(url_list) // num_threads
-        url_chunks = [url_list[i:i + chunk_size] for i in range(0, len(url_list), chunk_size)]
-
         # Create and start the threads
         thread_pool = []
-        for i, urls_chunk in enumerate(url_chunks):
+        for i, urls_chunk in enumerate(url_list):
             queue_name = f"scraped_data_{i}"  # Unique queue name for each thread
             thread = threading.Thread(target=self.scrape_single_page, args=(urls_chunk, queue_name))
             thread_pool.append(thread)
@@ -139,7 +133,7 @@ class BamaScraper:
 
 
 # Usage
-url_list = [DRIVER_CONFIG["target_url_1"], DRIVER_CONFIG["target_url_2"],]  # Add all URLs to the list
+url_list = DRIVER_CONFIG["target_url"]
 scraper = BamaScraper(DRIVER_CONFIG["local_webdriver_path"])
 scraper.scrape(url_list)
 
