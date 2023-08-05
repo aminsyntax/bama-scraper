@@ -2,7 +2,7 @@ import pymongo
 import pika
 import json
 
-from src.config.env import MOMGO_CONFIG, RABBITMQ_CONFIG
+from src.config.env import MOMGO_CONFIG, RABBITMQ_CONFIG, DRIVER_CONFIG
 
 class CarDataConsumer:
     def __init__(self, amqp_url, mongodb_url):
@@ -15,6 +15,7 @@ class CarDataConsumer:
 
     def process_message(self, channel, method, properties, body):
         data = json.loads(body)
+        
         queue_name = method.routing_key  # Get the queue name from the routing key
 
         # Save the data to the corresponding MongoDB collection
@@ -29,13 +30,16 @@ class CarDataConsumer:
         connection = pika.BlockingConnection(pika.URLParameters(self.amqp_url))
         channel = connection.channel()
 
-        # Declare both queues with their respective names
-        channel.queue_declare(queue='scraped_data_0')
-        channel.queue_declare(queue='scraped_data_1')
+        url_list = DRIVER_CONFIG["target_url"]
 
-        # Start consuming from both queues
-        channel.basic_consume(queue='scraped_data_0', on_message_callback=self.process_message)
-        channel.basic_consume(queue='scraped_data_1', on_message_callback=self.process_message)
+        for i, url in enumerate(url_list):
+            queue_name = url.split("/")[4]
+
+            # Declare both queues with their respective names
+            channel.queue_declare(queue=queue_name)
+
+            # Start consuming from both queues
+            channel.basic_consume(queue=queue_name, on_message_callback=self.process_message)
 
         print("Waiting for messages. To exit press CTRL+C")
         channel.start_consuming()

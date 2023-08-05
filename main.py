@@ -1,3 +1,4 @@
+from concurrent.futures import ThreadPoolExecutor
 import time
 import threading
 from bs4 import BeautifulSoup
@@ -28,7 +29,7 @@ class BamaScraper:
         self.driver.get(self.url)
         time.sleep(5)
 
-    def scroll_page(self, scroll_limit=2, scroll_pause_time=5):
+    def scroll_page(self, scroll_limit=1, scroll_pause_time=6):
         scroll_count = 0
         previous_height = self.driver.execute_script("return document.body.scrollHeight")
         while scroll_count < scroll_limit:
@@ -119,21 +120,27 @@ class BamaScraper:
         connection.close()
 
     def scrape(self, url_list):
-        # Create and start the threads
-        thread_pool = []
-        for i, urls_chunk in enumerate(url_list):
-            queue_name = f"scraped_data_{i}"  # Unique queue name for each thread
-            thread = threading.Thread(target=self.scrape_single_page, args=(urls_chunk, queue_name))
-            thread_pool.append(thread)
-            thread.start()
+        # # Create and start the threads
+        # thread_pool = []
+        # for urls_chunk in url_list:
+        #     queue_name = urls_chunk.split("/")[4]  # Unique queue name for each thread
+        #     thread = threading.Thread(target=self.scrape_single_page, args=(urls_chunk, queue_name))
+        #     thread_pool.append(thread)
+        #     thread.start()
 
-        # Wait for all threads to finish
-        for thread in thread_pool:
-            thread.join()
+        # # Wait for all threads to finish
+        # for thread in thread_pool:
+        #     thread.join()
+            
+        with ThreadPoolExecutor() as executor:
+          for urls_chunk in url_list:
+              queue_name = urls_chunk.split("/")[4]  # Unique queue name for each thread
+              executor.submit(self.scrape_single_page, urls_chunk, queue_name)
 
 
 # Usage
 url_list = DRIVER_CONFIG["target_url"]
+# print(url_list)
 scraper = BamaScraper(DRIVER_CONFIG["local_webdriver_path"])
 scraper.scrape(url_list)
 
